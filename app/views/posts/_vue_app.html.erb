@@ -1,0 +1,179 @@
+<div id="app" style="border: 1px solid blue">
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Content</th>
+        <th colspan="3"></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr v-for="post in posts">
+        <td>{{ post.title }}</td>
+        <td>{{ post.author }}</td>
+        <td>{{ post.content }}</td>
+        <!--
+        <td><a href="{{ post.url | pathTo }}">Show</a></td>
+        <td><a href="{{ post.url | pathTo 'edit' }}">Edit</a></td>
+        -->
+        <td><a @click="showPost($index, post.id)">Show</a></td>
+        <td><a @click="editPost($index, post.id)">Edit</a></td>
+        <td><button v-on:click="removePost($index, post.id)">X</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr>
+
+  <div class="add-post">
+    <%= render "vue_form" %>
+  </div>
+</div>
+
+<script>
+Vue.filter('pathTo', function (path, action) {
+  // return processed value
+  if (!path) return;
+
+  var rtn = path.split('.json');
+
+  if(action === 'edit') {
+    rtn.push('/edit');
+  }
+
+  return rtn.join();
+});
+
+new Vue({
+  el: '#app',
+  data: {
+    newPost: {},
+    posts: [
+      { title: '---' }
+    ],
+    state: ''
+  },
+  created: function() {
+    this.fetchPosts();
+  },
+  methods: {
+    fetchPosts: function() {
+      var that = this;
+      $.ajax({
+        method: 'GET',
+        data: {},
+        url: '/posts.json',
+        success: function(res) {
+          that.errors = {}
+          console.info('fetch_data: ', res);
+          that.posts = res;
+          that.newPost = {};
+        },
+        error: function(res) {
+          that.errors = res.responseJSON.errors
+        }
+      })
+    },
+
+    addPost: function () {
+      var that = this;
+      var title = this.newPost.title.trim();
+      if (title) {
+
+        $.ajax({
+          method: 'POST',
+          data: {
+            post: that.newPost,
+          },
+          url: '/posts.json',
+          success: function(res) {
+            console.info(res);
+
+            that.errors = {}
+            that.posts.push(res);
+            that.newPost = {};
+          },
+          error: function(res) {
+            that.errors = res.responseJSON.errors
+          }
+        })
+      }
+    },
+
+    showPost: function(index, post_id) {
+      this.state = 'show';
+      this.newPost = this.posts[index];
+      console.log('showPost');
+    },
+
+    editPost: function(index, post_id) {
+      this.state = 'edit';
+      this.newPost = Object.assign({}, this.posts[index])
+      console.log('editPost', this.newPost);
+    },
+
+    updatePost: function() {
+      var that = this;
+      console.log('updatePost', this.newPost);
+
+      if (this.newPost.id) {
+        $.ajax({
+          method: 'PUT',
+          data: {
+            post: that.newPost,
+          },
+          url: '/posts/' + that.newPost.id + '.json',
+          success: function(res) {
+            console.info(res);
+            that.errors = {};
+            that.newPost = {};
+            that.state = '';
+          },
+          error: function(res) {
+            that.errors = res.responseJSON.errors
+          }
+        });
+      }
+    },
+
+    removePost: function (index, post_id) {
+      var that = this;
+
+      console.warn('removePost: ', index, post_id);
+
+      if (post_id) {
+        $.ajax({
+          method: 'DELETE',
+          data: {
+            /* post: { title: title, author: 'ralph', content: content }, */
+          },
+          url: '/posts/' + post_id + '.json',
+          success: function(res) {
+            console.info(res);
+            that.errors = {};
+            that.posts.splice(index, 1);
+          },
+          error: function(res) {
+            that.errors = res.responseJSON.errors
+          }
+        });
+      }
+    },
+
+    cancel: function() {
+      this.state = '';
+      this.newPost = {};
+    }
+  },
+  computed: {
+    isAddable: function() {
+      return this.state !== 'show' && this.state !== 'edit';
+    },
+    isEdit: function() {
+      return this.state === 'edit';
+    }
+  }
+})
+</script>

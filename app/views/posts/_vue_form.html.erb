@@ -1,0 +1,9 @@
+<form class="" id="" action="" onsubmit="return false;">
+  <%= hidden_field_tag :authenticity_token %>
+  <input v-model="newPost.title" placeholder="title">
+  <input v-model="newPost.author" placeholder="author">
+  <input v-model="newPost.content" placeholder="content">
+  <button @click="cancel" v-if="newPost.title">Cancel</button>
+  <button @click="addPost" v-if="isAddable">Add</button>
+  <button @click="updatePost" v-if="isEdit">Update</button>
+</form>
