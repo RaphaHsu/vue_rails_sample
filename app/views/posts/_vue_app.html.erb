@@ -28,11 +28,85 @@
   <hr>
 
   <div class="add-post">
-    <%= render "vue_form" %>
+    <form-component :post="newPost" :state="state">
+    </form-component>
   </div>
 </div>
 
+<template id="formComponent">
+  <form class="" id="" action="" onsubmit="return false;">
+    <%= hidden_field_tag :authenticity_token %>
+    <input v-model="post.title" placeholder="title">
+    <input v-model="post.author" placeholder="author">
+    <input v-model="post.content" placeholder="content">
+    <button @click="cancel" v-if="post.title">Cancel</button>
+    <button @click="addPost" v-if="isAddable">Add</button>
+    <button @click="updatePost" v-if="isEdit">Update</button>
+  </form>
+</template>
+
 <script>
+Vue.component('form-component', {
+  props: ['post', 'state'],
+  template: '#formComponent',
+  methods: {
+    addPost: function () {
+      var that = this;
+      var title = this.post.title.trim();
+      if (title) {
+
+        this.$http.post('/posts.json', { post: that.post })
+          .then(
+            function success(res) {
+              console.info(res);
+
+              that.errors = {}
+              that.posts.push(res.data);
+              that.post = {};
+            },
+            function error(res) {
+              that.errors = res.data.errors
+            }
+          );
+      }
+    },
+
+    updatePost: function() {
+      var that = this;
+      console.log('updatePost', this.post);
+
+      if (this.post.id) {
+        this.$http.patch('/posts/' + that.post.id + '.json', { post: that.post })
+          .then(
+            function success(res) {
+              console.info(res);
+
+              that.errors = {};
+              that.post = {};
+              that.state = '';
+            },
+            function error(res) {
+              that.errors = res.data.errors
+            }
+          );
+      }
+    },
+
+    cancel: function() {
+      this.state = '';
+      this.post = {};
+    }
+  },
+  computed: {
+    isAddable: function() {
+      return this.state !== 'show' && this.state !== 'edit';
+    },
+    isEdit: function() {
+      return this.state === 'edit';
+    }
+  }
+});
+
 Vue.filter('pathTo', function (path, action) {
   // return processed value
   if (!path) return;
@@ -86,27 +160,6 @@ new Vue({
         )
     },
 
-    addPost: function () {
-      var that = this;
-      var title = this.newPost.title.trim();
-      if (title) {
-
-        this.$http.post('/posts.json', { post: that.newPost })
-          .then(
-            function success(res) {
-              console.info(res);
-
-              that.errors = {}
-              that.posts.push(res.data);
-              that.newPost = {};
-            },
-            function error(res) {
-              that.errors = res.data.errors
-            }
-          );
-      }
-    },
-
     showPost: function(index, post_id) {
       this.state = 'show';
       this.newPost = this.posts[index];
@@ -117,27 +170,6 @@ new Vue({
       this.state = 'edit';
       this.newPost = Object.assign({}, this.posts[index])
       console.log('editPost', this.newPost);
-    },
-
-    updatePost: function() {
-      var that = this;
-      console.log('updatePost', this.newPost);
-
-      if (this.newPost.id) {
-        this.$http.patch('/posts/' + that.newPost.id + '.json', { post: that.newPost })
-          .then(
-            function success(res) {
-              console.info(res);
-
-              that.errors = {};
-              that.newPost = {};
-              that.state = '';
-            },
-            function error(res) {
-              that.errors = res.data.errors
-            }
-          );
-      }
     },
 
     removePost: function (index, post_id) {
@@ -158,19 +190,6 @@ new Vue({
             }
           );
       }
-    },
-
-    cancel: function() {
-      this.state = '';
-      this.newPost = {};
-    }
-  },
-  computed: {
-    isAddable: function() {
-      return this.state !== 'show' && this.state !== 'edit';
-    },
-    isEdit: function() {
-      return this.state === 'edit';
     }
   }
 })
