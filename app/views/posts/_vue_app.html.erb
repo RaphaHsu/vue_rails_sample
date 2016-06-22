@@ -60,8 +60,9 @@ Vue.component('form-component', {
             function success(res) {
               console.info(res);
 
+              that.$dispatch('list-update');
+
               that.errors = {}
-              that.posts.push(res.data);
               that.post = {};
             },
             function error(res) {
@@ -80,6 +81,8 @@ Vue.component('form-component', {
           .then(
             function success(res) {
               console.info(res);
+
+              that.$dispatch('list-update');
 
               that.errors = {};
               that.post = {};
@@ -190,6 +193,12 @@ new Vue({
             }
           );
       }
+    }
+  },
+  events: {
+    'list-update': function() {
+      console.log('list-update');
+      this.fetchPosts();
     }
   }
 })
