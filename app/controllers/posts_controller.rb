@@ -5,11 +5,6 @@ class PostsController < ApplicationController
   # GET /posts.json
   def index
     @posts = Post.all
-
-    # respond_to do |format|
-    #   format.html
-    #   format.json { render json: { errors: 'error' }, status: :unprocessable_entity }
-    # end
   end
 
   # GET /posts/1
