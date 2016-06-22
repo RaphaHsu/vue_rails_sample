@@ -46,6 +46,15 @@ Vue.filter('pathTo', function (path, action) {
   return rtn.join();
 });
 
+/* Set vue-resource */
+Vue.use(VueResource);
+Vue.http.interceptors.push((request, next) => {
+  request.data.authenticity_token = '<%= form_authenticity_token %>';
+  // continue to next interceptor
+  next();
+});
+
+/* Intial Vue App */
 new Vue({
   el: '#app',
   data: {
@@ -61,20 +70,20 @@ new Vue({
   methods: {
     fetchPosts: function() {
       var that = this;
-      $.ajax({
-        method: 'GET',
-        data: {},
-        url: '/posts.json',
-        success: function(res) {
-          that.errors = {}
-          console.info('fetch_data: ', res);
-          that.posts = res;
-          that.newPost = {};
-        },
-        error: function(res) {
-          that.errors = res.responseJSON.errors
-        }
-      })
+      this.$http.get('/posts.json')
+        .then(
+          function success(res) {
+            console.info(res);
+            console.info('fetch_data: ', res.data);
+
+            that.errors = {}
+            that.posts = res.data;
+            that.newPost = {};
+          },
+          function error(res) {
+            that.errors = res.data.errors
+          }
+        )
     },
 
     addPost: function () {
@@ -82,23 +91,19 @@ new Vue({
       var title = this.newPost.title.trim();
       if (title) {
 
-        $.ajax({
-          method: 'POST',
-          data: {
-            post: that.newPost,
-          },
-          url: '/posts.json',
-          success: function(res) {
-            console.info(res);
+        this.$http.post('/posts.json', { post: that.newPost })
+          .then(
+            function success(res) {
+              console.info(res);
 
-            that.errors = {}
-            that.posts.push(res);
-            that.newPost = {};
-          },
-          error: function(res) {
-            that.errors = res.responseJSON.errors
-          }
-        })
+              that.errors = {}
+              that.posts.push(res.data);
+              that.newPost = {};
+            },
+            function error(res) {
+              that.errors = res.data.errors
+            }
+          );
       }
     },
 
@@ -119,22 +124,19 @@ new Vue({
       console.log('updatePost', this.newPost);
 
       if (this.newPost.id) {
-        $.ajax({
-          method: 'PUT',
-          data: {
-            post: that.newPost,
-          },
-          url: '/posts/' + that.newPost.id + '.json',
-          success: function(res) {
-            console.info(res);
-            that.errors = {};
-            that.newPost = {};
-            that.state = '';
-          },
-          error: function(res) {
-            that.errors = res.responseJSON.errors
-          }
-        });
+        this.$http.patch('/posts/' + that.newPost.id + '.json', { post: that.newPost })
+          .then(
+            function success(res) {
+              console.info(res);
+
+              that.errors = {};
+              that.newPost = {};
+              that.state = '';
+            },
+            function error(res) {
+              that.errors = res.data.errors
+            }
+          );
       }
     },
 
@@ -144,21 +146,17 @@ new Vue({
       console.warn('removePost: ', index, post_id);
 
       if (post_id) {
-        $.ajax({
-          method: 'DELETE',
-          data: {
-            /* post: { title: title, author: 'ralph', content: content }, */
-          },
-          url: '/posts/' + post_id + '.json',
-          success: function(res) {
-            console.info(res);
-            that.errors = {};
-            that.posts.splice(index, 1);
-          },
-          error: function(res) {
-            that.errors = res.responseJSON.errors
-          }
-        });
+        this.$http.delete('/posts/' + post_id + '.json', { /* post: { title: title, author: 'ralph', content: content }, */ })
+          .then(
+            function success(res) {
+              console.info(res);
+              that.errors = {};
+              that.posts.splice(index, 1);
+            },
+            function error(res) {
+              that.errors = res.data.errors
+            }
+          );
       }
     },
 
